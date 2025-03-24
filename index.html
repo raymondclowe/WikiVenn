@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikipedia Venn Diagram</title>
+    <!-- D3.js for rendering -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <!-- venn.js for Venn diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/venn.js@0.2.20/venn.min.js"></script>
+    <!-- html-to-text for converting HTML to plain text -->
+        <style>
+        #venn { width: 600px; height: 400px; }
+        .topic-list { margin-top: 20px; }
+        .topic { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Wikipedia Venn Diagram</h1>
+    <form id="wikiForm">
+        <label for="page1">Page 1:</label>
+        <input type="text" id="page1" name="page1" required placeholder="e.g., Albert Einstein">
+        <label for="page2">Page 2:</label>
+        <input type="text" id="page2" name="page2" required placeholder="e.g., Quantum mechanics">
+        <button type="submit">Generate Venn Diagram</button>
+    </form>
+    <div id="venn"></div>
+    <div class="topic-list" id="uniqueA"></div>
+    <div class="topic-list" id="uniqueB"></div>
+    <div class="topic-list" id="intersection"></div>
+    <script src="main.js"></script>
+</body>
+</html>
