@@ -1,25 +1,24 @@
-document.getElementById('wikiForm').addEventListener('submit', function(event) {
+document.getElementById('wikiForm').addEventListener('submit', async function(event) {
     event.preventDefault();
     const page1 = document.getElementById('page1').value.trim();
     const page2 = document.getElementById('page2').value.trim();
 
-    // Initialize web worker
-    const worker = new Worker('worker.js');
-    worker.postMessage({ page1, page2 });
-
-    worker.onmessage = function(e) {
-        const { uniqueA, uniqueB, intersection } = e.data;
+    try {
+        const response = await fetch(`/api/wiki?page1=${encodeURIComponent(page1)}&page2=${encodeURIComponent(page2)}`);
+        const data = await response.json();
 
         // Draw Venn diagram based on topic counts
-        displayVennDiagram(uniqueA.length, uniqueB.length, intersection.length);
+        displayVennDiagram(data.uniqueA.length, data.uniqueB.length, data.intersection.length);
 
         // Display topics as lists (word cloud integration can be added later)
-        displayTopics('uniqueA', uniqueA, `Unique to ${page1}`);
-        displayTopics('uniqueB', uniqueB, `Unique to ${page2}`);
-        displayTopics('intersection', intersection, `Common to ${page1} and ${page2}`);
+        displayTopics('uniqueA', data.uniqueA, `Unique to ${page1}`);
+        displayTopics('uniqueB', data.uniqueB, `Unique to ${page2}`);
+        displayTopics('intersection', data.intersection, `Common to ${page1} and ${page2}`);
 
-        worker.terminate(); // Clean up worker
-    };
+    } catch (error) {
+        console.error(error);
+        alert('Error fetching wiki data');
+    }
 });
 
 function displayVennDiagram(sizeA, sizeB, sizeIntersection) {

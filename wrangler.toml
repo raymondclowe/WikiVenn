@@ -1,0 +1,7 @@
+name = "wikivenn-worker"
+type = "javascript"
+account_id = "YOUR_ACCOUNT_ID"
+workers_dev = true
+kv_namespaces = [
+  { binding = "WIKI_CACHE", id = "YOUR_KV_NAMESPACE_ID" }
+]
