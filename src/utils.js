@@ -1,5 +1,5 @@
 async function getPageData(title) {
-  const url = `https://en.m.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+  const url = `https://en.m.wikipedia.org/wiki/${encodeURIComponent(title)}?action=render`;
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -7,32 +7,37 @@ async function getPageData(title) {
     }
     const html = await response.text();
     
-    // Parse HTML and get main content
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const mainContent = doc.querySelector('main#content');
-    if (!mainContent) {
-      throw new Error('Could not find main content section');
-    }
+    
 
-    // Extract all links from main content
-    const links = Array.from(mainContent.querySelectorAll('a[href^="/wiki/"]'))
-      .map(a => a.getAttribute('href').replace('/wiki/', ''))
-      .filter(link => !link.startsWith('File:') && 
-                      !link.startsWith('Category:') &&
-                      !link.startsWith('Special:') &&
-                      !link.includes(':'));
+    // Extract content between h2 headings (main sections)
+    const contentSections = html.match(/<h2\b[^>]*>.*?<\/h2>.*?(?=<h2\b[^>]*>|$)/gis) || [];
 
-    // Count mentions in main content text
-    const text = mainContent.textContent;
+    // return contentSections
+
+    const mainContent = contentSections
+      .filter(section => !section.includes('id="References"') && 
+                        !section.includes('id="External_links"'))
+      .join('');
+
+    // return mainContent
+
+    // Extract links from content sections only
+    const links = (mainContent.match(/href="\/\/en\.wikipedia\.org\/wiki\/([^"]+)"/g) || [])
+    .map(link => link.replace('href="//en.wikipedia.org/wiki/', '').replace('"', ''))
+    .filter(link => !link.startsWith('File:') && !link.startsWith('Special:'));
+
+    // Count mentions in cleaned text
+    const cleanText = mainContent.replace(/<[^>]+>/g, ' ');
     const mentionCounts = {};
-    for (const link of links) {
-      const regex = new RegExp(`\\b${link.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'gi');
-      const matches = text.match(regex);
-      mentionCounts[link] = matches ? matches.length : 0;
-    }
+    links.forEach(link => {
+      const count = (cleanText.match(new RegExp(link.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi')) || []).length;
+      mentionCounts[link] = count;
+    });
 
-    return { links, mentionCounts };
+    return {
+      links: links.slice(0, 500),
+      mentionCounts
+    };
   } catch (error) {
     console.error(`Error fetching ${title}: ${error.message}`);
     return { links: [], mentionCounts: {} };
