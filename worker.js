@@ -5,24 +5,22 @@ const stopList = [
   'Category', 'Template', 'Main Page', 'Help', 'Portal'
 ];
 
-addEventListener('fetch', async event => {
-  const url = new URL(event.request.url);
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
 
-  if (url.pathname === '/api/wiki') {
-    event.respondWith(handleWikiRequest(event));
-  } else {
-    // Serve static files
-    try {
-      const response = await fetch(event.request);
-      event.respondWith(response);
-    } catch (e) {
-      event.respondWith(new Response("Not found", {status: 404}));
+    // Handle API requests
+    if (url.pathname === '/api/wiki') {
+      return handleWikiRequest(request, env);
     }
-  }
-});
 
-async function handleWikiRequest(event) {
-  const url = new URL(event.request.url);
+    // Serve static assets for all other requests
+    return env.ASSETS.fetch(request);
+  }
+};
+
+async function handleWikiRequest(request, env) {
+  const url = new URL(request.url);
   const page1 = url.searchParams.get('page1');
   const page2 = url.searchParams.get('page2');
 
@@ -31,18 +29,28 @@ async function handleWikiRequest(event) {
   }
 
   try {
-    const data = await getWikiData(page1, page2);
+    const data = await getWikiData(page1, page2, env);
     return new Response(JSON.stringify(data), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error(error);
-    return new Response("Error fetching wiki data", { status: 500 });
+    console.error('API Error:', error);
+    return new Response(JSON.stringify({
+      error: "Error fetching wiki data",
+      details: error.message,
+      stack: error.stack
+    }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 
-async function getWikiData(page1, page2) {
-  const cachedData = await WIKI_CACHE.get(`${page1}:${page2}`);
+async function getWikiData(page1, page2, env) {
+  if (!env.WIKI_CACHE) {
+    throw new Error('WIKI_CACHE binding is not available - check wrangler.toml configuration');
+  }
+  const cachedData = await env.WIKI_CACHE.get(`${page1}:${page2}`);
   if (cachedData) {
     return JSON.parse(cachedData);
   }
@@ -77,12 +85,12 @@ async function getWikiData(page1, page2) {
   })).filter(t => t.count > 0);
 
   const data = {
-    uniqueA: uniqueATopics.sort((a, b) => b.count - a.count).slice(0, 10), // Top 10 for readability
-    uniqueB: uniqueBTopics.sort((a, b) => b.count - a.count).slice(0, 10),
-    intersection: intersectionTopics.sort((a, b) => b.count - a.count).slice(0, 10)
+    uniqueA: uniqueATopics.sort((a, b) => b.count - a.count),
+    uniqueB: uniqueBTopics.sort((a, b) => b.count - a.count),
+    intersection: intersectionTopics.sort((a, b) => b.count - a.count)
   };
 
-  await WIKI_CACHE.put(`${page1}:${page2}`, JSON.stringify(data));
+  await env.WIKI_CACHE.put(`${page1}:${page2}`, JSON.stringify(data));
 
   return data;
 }

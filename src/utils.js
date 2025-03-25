@@ -2,8 +2,13 @@ async function getPageData(title) {
   const url = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&format=json&origin=*`;
   try {
     const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Wikipedia API error: ${response.status} ${response.statusText}`);
+    }
     const data = await response.json();
-    if (!data.parse) throw new Error('Page not found');
+    if (!data.parse) {
+      throw new Error(`Wikipedia page not found: ${title}`);
+    }
 
     // Extract internal links and filter out unwanted ones
     const links = data.parse.links
