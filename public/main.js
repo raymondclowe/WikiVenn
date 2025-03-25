@@ -10,10 +10,10 @@ document.getElementById('wikiForm').addEventListener('submit', async function(ev
         // Draw Venn diagram based on topic counts
         displayVennDiagram(data.uniqueA.length, data.uniqueB.length, data.intersection.length);
 
-        // Display topics as lists (word cloud integration can be added later)
+        // Display topics as lists with common topics first
+        displayTopics('intersection', data.intersection, `Common to ${page1} and ${page2}`);
         displayTopics('uniqueA', data.uniqueA, `Unique to ${page1}`);
         displayTopics('uniqueB', data.uniqueB, `Unique to ${page2}`);
-        displayTopics('intersection', data.intersection, `Common to ${page1} and ${page2}`);
 
     } catch (error) {
         console.error(error);

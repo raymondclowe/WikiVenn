@@ -1,25 +1,30 @@
 async function getPageData(title) {
-  const url = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&format=json&origin=*`;
+  const url = `https://en.m.wikipedia.org/wiki/${encodeURIComponent(title)}`;
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Wikipedia API error: ${response.status} ${response.statusText}`);
+      throw new Error(`Wikipedia error: ${response.status} ${response.statusText}`);
     }
-    const data = await response.json();
-    if (!data.parse) {
-      throw new Error(`Wikipedia page not found: ${title}`);
+    const html = await response.text();
+    
+    // Parse HTML and get main content
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const mainContent = doc.querySelector('main#content');
+    if (!mainContent) {
+      throw new Error('Could not find main content section');
     }
 
-    // Extract internal links and filter out unwanted ones
-    const links = data.parse.links
-      .map(link => link['*'])
-      .filter(link => !link.startsWith('File:') && !link.startsWith('Category:'));
+    // Extract all links from main content
+    const links = Array.from(mainContent.querySelectorAll('a[href^="/wiki/"]'))
+      .map(a => a.getAttribute('href').replace('/wiki/', ''))
+      .filter(link => !link.startsWith('File:') && 
+                      !link.startsWith('Category:') &&
+                      !link.startsWith('Special:') &&
+                      !link.includes(':'));
 
-    // Get HTML content and convert to plain text
-    const html = data.parse.text['*'];
-    const text = stripHtml(html);
-
-    // Count mentions of each link title in the text
+    // Count mentions in main content text
+    const text = mainContent.textContent;
     const mentionCounts = {};
     for (const link of links) {
       const regex = new RegExp(`\\b${link.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'gi');
@@ -27,11 +32,9 @@ async function getPageData(title) {
       mentionCounts[link] = matches ? matches.length : 0;
     }
 
-    // Return the object with links and mention counts
     return { links, mentionCounts };
   } catch (error) {
     console.error(`Error fetching ${title}: ${error.message}`);
-    // Return an empty object with the same structure on error
     return { links: [], mentionCounts: {} };
   }
 }
