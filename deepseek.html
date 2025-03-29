@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikipedia Topics Venn Diagram</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #ff7e5f;
+            --overlap-color: #9d6381;
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --white: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .description {
+            max-width: 700px;
+            margin: 0 auto 30px;
+            padding: 15px;
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .input-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 20px auto;
+        }
+
+        button:hover {
+            background-color: #3a5a80;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin: 30px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .venn-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .venn-diagram {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            max-width: 600px;
+            margin-bottom: 30px;
+        }
+
+        .circle {
+            position: absolute;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            opacity: 0.7;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .circle-title {
+            font-size: 20px;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .word-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            height: calc(100% - 30px);
+            overflow: hidden;
+        }
+
+        .word {
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: all 0.2s ease;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            display: inline-block;
+        }
+
+        .word:hover {
+            opacity: 1;
+            transform: scale(1.05);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .circle-left {
+            background-color: var(--primary-color);
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .circle-right {
+            background-color: var(--secondary-color);
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .overlap {
+            background-color: var(--overlap-color);
+            width: 250px;
+            height: 250px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            border-radius: 50%;
+            opacity: 0.9;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .topics-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .topics-box {
+            flex: 1;
+            min-width: 300px;
+            background: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .topics-box h3 {
+            margin-bottom: 15px;
+            color: var(--text-color);
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .topics-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .topic {
+            background: #e9ecef;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .topic:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .shared-topics {
+            background-color: var(--overlap-color);
+            color: white;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            min-width: 180px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 15px;
+            background: #fdecea;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .frequency-1 { font-size: 12px; }
+        .frequency-2 { font-size: 14px; }
+        .frequency-3 { font-size: 16px; }
+        .frequency-4 { font-size: 18px; }
+        .frequency-5 { font-size: 20px; }
+        .frequency-6 { font-size: 22px; }
+
+        @media (max-width: 768px) {
+            .venn-diagram {
+                height: 300px;
+            }
+            
+            .circle, .overlap {
+                width: 150px;
+                height: 150px;
+                font-size: 14px;
+            }
+            
+            .circle-title {
+                font-size: 16px;
+                margin-bottom: 5px;
+            }
+            
+            .word {
+                font-size: 10px !important;
+            }
+        }
+
+        .topic-explanation {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Wikipedia Topics Venn Diagram</h1>
+        <div class="description">
+            Compare two Wikipedia articles to see their overlapping linked topics. Enter two subjects below to generate a visual representation of shared concepts between them.
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="input-section">
+            <div class="input-group">
+                <label for="topic1">First Wikipedia Subject:</label>
+                <input type="text" id="topic1" placeholder="e.g. Artificial Intelligence">
+            </div>
+            <div class="input-group">
+                <label for="topic2">Second Wikipedia Subject:</label>
+                <input type="text" id="topic2" placeholder="e.g. Psychology">
+            </div>
+        </div>
+
+        <button id="generate-btn">
+            <i class="fas fa-project-diagram"></i> Generate Venn Diagram
+        </button>
+
+        <div class="error" id="error-message"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing Wikipedia articles...</p>
+        </div>
+
+        <div class="result-section" id="result-section">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="count1">0</div>
+                    <div class="stat-title">Topics in <span id="title1">Subject 1</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="count-shared">0</div>
+                    <div class="stat-title">Shared Topics</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="count2">0</div>
+                    <div class="stat-title">Topics in <span id="title2">Subject 2</span></div>
+                </div>
+            </div>
+
+            <div class="venn-container">
+                <div class="venn-diagram">
+                    <div class="circle circle-left" id="circle1">
+                        <div class="circle-title" id="circle1-title">Subject 1</div>
+                        <div class="word-cloud" id="word-cloud1"></div>
+                    </div>
+                    <div class="circle circle-right" id="circle2">
+                        <div class="circle-title" id="circle2-title">Subject 2</div>
+                        <div class="word-cloud" id="word-cloud2"></div>
+                    </div>
+                    <div class="overlap" id="overlap">
+                        <div class="circle-title">Shared Topics</div>
+                        <div class="word-cloud" id="shared-word-cloud"></div>
+                    </div>
+                </div>
+
+                <div class="topics-container">
+                    <div class="topics-box">
+                        <h3 id="unique1-title">Unique to Subject 1</h3>
+                        <div class="topics-list" id="unique1-topics"></div>
+                    </div>
+                    <div class="topics-box">
+                        <h3>Shared Topics</h3>
+                        <div class="topics-list" id="shared-topics"></div>
+                    </div>
+                    <div class="topics-box">
+                        <h3 id="unique2-title">Unique to Subject 2</h3>
+                        <div class="topics-list" id="unique2-topics"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="topic-explanation" id="topic-explanation">
+                <h3 id="explanation-title">Topic Explanation</h3>
+                <p id="explanation-content">Select a topic to see more information about it.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const topic1Input = document.getElementById('topic1');
+            const topic2Input = document.getElementById('topic2');
+            const generateBtn = document.getElementById('generate-btn');
+            const loadingElement = document.getElementById('loading');
+            const resultSection = document.getElementById('result-section');
+            const errorElement = document.getElementById('error-message');
+            
+            // Venn diagram elements
+            const circle1 = document.getElementById('circle1');
+            const circle2 = document.getElementById('circle2');
+            const circle1Title = document.getElementById('circle1-title');
+            const circle2Title = document.getElementById('circle2-title');
+            const wordCloud1 = document.getElementById('word-cloud1');
+            const wordCloud2 = document.getElementById('word-cloud2');
+            const sharedWordCloud = document.getElementById('shared-word-cloud');
+            const count1Element = document.getElementById('count1');
+            const count2Element = document.getElementById('count2');
+            const countSharedElement = document.getElementById('count-shared');
+            const title1Element = document.getElementById('title1');
+            const title2Element = document.getElementById('title2');
+            const unique1Title = document.getElementById('unique1-title');
+            const unique2Title = document.getElementById('unique2-title');
+            
+            // Topic containers
+            const unique1Topics = document.getElementById('unique1-topics');
+            const unique2Topics = document.getElementById('unique2-topics');
+            const sharedTopics = document.getElementById('shared-topics');
+            
+            // Topic explanation
+            const topicExplanation = document.getElementById('topic-explanation');
+            const explanationTitle = document.getElementById('explanation-title');
+            const explanationContent = document.getElementById('explanation-content');
+
+            generateBtn.addEventListener('click', generateVennDiagram);
+
+            async function generateVennDiagram() {
+                const topic1 = topic1Input.value.trim();
+                const topic2 = topic2Input.value.trim();
+                
+                if (!topic1 || !topic2) {
+                    showError("Please enter both Wikipedia subjects.");
+                    return;
+                }
+                
+                // Reset UI
+                hideError();
+                resultSection.style.display = 'none';
+                loadingElement.style.display = 'flex';
+                generateBtn.disabled = true;
+                wordCloud1.innerHTML = '';
+                wordCloud2.innerHTML = '';
+                sharedWordCloud.innerHTML = '';
+                
+                try {
+                    // Get Wikipedia page data for both topics
+                    const [topics1, topics2] = await Promise.all([
+                        getWikipediaTopics(topic1),
+                        getWikipediaTopics(topic2)
+                    ]);
+                    
+                    // Update the UI with the actual titles from Wikipedia
+                    circle1Title.textContent = topics1.title || topic1;
+                    circle2Title.textContent = topics2.title || topic2;
+                    title1Element.textContent = topics1.title || topic1;
+                    title2Element.textContent = topics2.title || topic2;
+                    unique1Title.textContent = `Unique to ${topics1.title || topic1}`;
+                    unique2Title.textContent = `Unique to ${topics2.title || topic2}`;
+                    
+                    // Process topics: calculate frequencies (simulated since Wikipedia API doesn't provide this)
+                    const topics1WithFreq = calculateFrequencies(topics1.topics);
+                    const topics2WithFreq = calculateFrequencies(topics2.topics);
+                    
+                    // Find intersection of topics (case-insensitive)
+                    const topics1Lower = topics1.topics.map(t => t.toLowerCase());
+                    const topics2Lower = topics2.topics.map(t => t.toLowerCase());
+                    
+                    const shared = topics1.topics.filter((t, i) => 
+                        topics2Lower.includes(t.toLowerCase())
+                    ).filter((value, index, self) => 
+                        self.indexOf(value) === index
+                    );
+                    
+                    const sharedWithFreq = calculateFrequencies(shared);
+                    
+                    const unique1 = topics1.topics.filter(t => 
+                        !topics2Lower.includes(t.toLowerCase())
+                    );
+                    
+                    const unique2 = topics2.topics.filter(t => 
+                        !topics1Lower.includes(t.toLowerCase())
+                    );
+                    
+                    // Update counts
+                    count1Element.textContent = unique1.length;
+                    count2Element.textContent = unique2.length;
+                    countSharedElement.textContent = shared.length;
+                    
+                    // Display word clouds in Venn circles (top 15 topics for each circle)
+                    displayWordCloud(topics1WithFreq.slice(0, 15), wordCloud1);
+                    displayWordCloud(topics2WithFreq.slice(0, 15), wordCloud2);
+                    displayWordCloud(sharedWithFreq.slice(0, 15), sharedWordCloud);
+                    
+                    // Display detailed topics in lists below
+                    displayTopics(unique1, unique1Topics);
+                    displayTopics(unique2, unique2Topics);
+                    displayTopics(shared, sharedTopics, true);
+                    
+                    // Show results
+                    loadingElement.style.display = 'none';
+                    resultSection.style.display = 'block';
+                    generateBtn.disabled = false;
+                    
+                    // Scroll to results
+                    resultSection.scrollIntoView({ behavior: 'smooth' });
+                    
+                } catch (error) {
+                    console.error("Error generating Venn diagram:", error);
+                    showError("An error occurred while fetching data. Please try again with different subjects.");
+                    loadingElement.style.display = 'none';
+                    generateBtn.disabled = false;
+                }
+            }
+            
+            // Simulate frequency calculation (in a real app, this would analyze actual frequencies)
+            function calculateFrequencies(topics) {
+                const frequencyMap = {};
+                
+                // Simulate frequencies - in reality we would count actual occurrences
+                topics.forEach(topic => {
+                    frequencyMap[topic] = (frequencyMap[topic] || 0) + 1;
+                });
+                
+                // Convert to array and sort by frequency (descending)
+                return Object.entries(frequencyMap)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([topic]) => topic); // Skip actual frequency for this demo
+            }
+            
+            async function getWikipediaTopics(topic) {
+                try {
+                    // First find the exact Wikipedia page title for our topic
+                    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&format=json&origin=*`;
+                    const searchResponse = await fetch(searchUrl);
+                    const searchData = await searchResponse.json();
+                    
+                    if (!searchData.query || !searchData.query.search.length) {
+                        throw new Error(`No Wikipedia page found for "${topic}"`);
+                    }
+                    
+                    const pageTitle = searchData.query.search[0].title;
+                    
+                    // Now get links from the page
+                    const linksUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=links&titles=${encodeURIComponent(pageTitle)}&pllimit=max&format=json&origin=*`;
+                    const linksResponse = await fetch(linksUrl);
+                    const linksData = await linksResponse.json();
+                    
+                    const pages = Object.values(linksData.query.pages)[0];
+                    if (!pages.links) {
+                        throw new Error(`No linked topics found for "${pageTitle}"`);
+                    }
+                    
+                    // Extract all link titles, filter out "Help:", "Category:", etc.
+                    const topics = pages.links
+                        .map(link => link.title)
+                        .filter(title => !title.startsWith("Help:") && 
+                                        !title.startsWith("Category:") && 
+                                        !title.startsWith("Template:") &&
+                                        !title.startsWith("Wikipedia:") &&
+                                        !title.startsWith("Special:") &&
+                                        !title.startsWith("Portal:") &&
+                                        !title.startsWith("File:"));
+                    
+                    return {
+                        title: pageTitle,
+                        topics: topics
+                    };
+                    
+                } catch (error) {
+                    console.error(`Error getting topics for "${topic}":`, error);
+                    throw error;
+                }
+            }
+            
+            function displayWordCloud(topics, container) {
+                container.innerHTML = '';
+                
+                if (!topics.length) {
+                    container.innerHTML = '<p>No topics found.</p>';
+                    return;
+                }
+                
+                // Display as clickable links to Wikipedia
+                topics.forEach((topic, index) => {
+                    // Simulate different font sizes for visual hierarchy (would use actual frequencies in real app)
+                    const fontSizeClass = `frequency-${Math.min(6, Math.floor((topics.length - index) / (topics.length / 6)) + 1)}`;
+                    
+                    const link = document.createElement('a');
+                    link.className = `word ${fontSizeClass}`;
+                    link.textContent = topic;
+                    link.href = `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        showTopicExplanation(topic, link.href);
+                    });
+                    container.appendChild(link);
+                });
+            }
+            
+            function displayTopics(topics, container, isShared = false) {
+                container.innerHTML = '';
+                
+                if (!topics.length) {
+                    container.innerHTML = '<p>No topics found.</p>';
+                    return;
+                }
+                
+                // Sort alphabetically
+                topics.sort((a, b) => a.localeCompare(b));
+                
+                topics.forEach(topic => {
+                    const topicElement = document.createElement('span');
+                    topicElement.className = `topic ${isShared ? 'shared-topics' : ''}`;
+                    topicElement.textContent = topic;
+                    topicElement.addEventListener('click', () => showTopicExplanation(topic, `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`));
+                    container.appendChild(topicElement);
+                });
+            }
+            
+            function showTopicExplanation(topic, wikiUrl) {
+                explanationTitle.textContent = topic;
+                explanationContent.innerHTML = `<p>Fetching information about <strong>${topic}</strong>...</p>`;
+                topicExplanation.style.display = 'block';
+                
+                // In a real implementation, you would fetch a summary from Wikipedia here
+                // For now we'll just show a link
+                setTimeout(() => {
+                    explanationContent.innerHTML = `
+                        <p>Wikipedia summary for <strong>${topic}</strong> would appear here in a full implementation.</p>
+                        <p><a href="${wikiUrl}" target="_blank">View "${topic}" on Wikipedia</a></p>
+                    `;
+                }, 300);
+            }
+            
+            function showError(message) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
+            
+            function hideError() {
+                errorElement.style.display = 'none';
+            }
+            
+            // Allow Enter key to trigger generation
+            [topic1Input, topic2Input].forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        generateVennDiagram();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
